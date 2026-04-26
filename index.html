@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flow AI Studio — Tạo Ảnh & Video AI</title>
+  <meta name="description" content="Tạo ảnh và video AI chất lượng cao với Flow AI Studio">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">✦</div>
+      <span class="brand-text">Flow AI</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-tab="dashboard">
+        <span class="nav-icon">📊</span><span class="nav-label">Dashboard</span>
+      </a>
+      <div class="nav-group-label">ẢNH</div>
+      <a href="#" class="nav-item" data-tab="t2i">
+        <span class="nav-icon">🎨</span><span class="nav-label">Text → Ảnh</span>
+      </a>
+      <a href="#" class="nav-item" data-tab="r2i">
+        <span class="nav-icon">🖼️</span><span class="nav-label">Ref → Ảnh</span>
+      </a>
+      <div class="nav-group-label">VIDEO</div>
+      <a href="#" class="nav-item" data-tab="t2v">
+        <span class="nav-icon">🎬</span><span class="nav-label">Text → Video</span>
+      </a>
+      <a href="#" class="nav-item" data-tab="i2v">
+        <span class="nav-icon">📸</span><span class="nav-label">Ảnh → Video</span>
+      </a>
+      <a href="#" class="nav-item" data-tab="r2v">
+        <span class="nav-icon">🎭</span><span class="nav-label">Ref → Video</span>
+      </a>
+      <div class="nav-divider"></div>
+      <a href="#" class="nav-item" data-tab="jobs">
+        <span class="nav-icon">📋</span><span class="nav-label">Jobs</span>
+        <span class="nav-badge" id="active-jobs-badge" style="display:none">0</span>
+      </a>
+      <a href="#" class="nav-item" data-tab="settings">
+        <span class="nav-icon">⚙️</span><span class="nav-label">Cài đặt</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <header class="topbar">
+      <button class="menu-toggle" id="menu-toggle">☰</button>
+      <h1 class="topbar-title" id="page-title">Dashboard</h1>
+      <div class="topbar-right">
+        <div class="api-status" id="api-status">
+          <span class="status-dot"></span>
+          <span class="status-text">Chưa kết nối</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+      <!-- ══════ DASHBOARD ══════ -->
+      <section class="tab-content active" id="tab-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card stat-credits">
+            <div class="stat-icon">💎</div>
+            <div class="stat-info"><div class="stat-value" id="stat-credits">—</div><div class="stat-label">Credits</div></div>
+          </div>
+          <div class="stat-card stat-images">
+            <div class="stat-icon">🖼️</div>
+            <div class="stat-info"><div class="stat-value" id="stat-images">—</div><div class="stat-label">Ảnh còn lại</div></div>
+          </div>
+          <div class="stat-card stat-videos">
+            <div class="stat-icon">🎬</div>
+            <div class="stat-info"><div class="stat-value" id="stat-videos">—</div><div class="stat-label">Video còn lại</div></div>
+          </div>
+          <div class="stat-card stat-threads">
+            <div class="stat-icon">⚡</div>
+            <div class="stat-info"><div class="stat-value" id="stat-threads">—</div><div class="stat-label">Luồng tối đa</div></div>
+          </div>
+        </div>
+        <div class="stats-grid stats-grid-2">
+          <div class="stat-card stat-plan">
+            <div class="stat-icon">👑</div>
+            <div class="stat-info"><div class="stat-value" id="stat-plan">—</div><div class="stat-label">Plan</div></div>
+          </div>
+          <div class="stat-card stat-daily">
+            <div class="stat-icon">📅</div>
+            <div class="stat-info"><div class="stat-value" id="stat-daily">—</div><div class="stat-label">Daily Used</div></div>
+          </div>
+          <div class="stat-card stat-active">
+            <div class="stat-icon">🔄</div>
+            <div class="stat-info"><div class="stat-value" id="stat-active-jobs">0</div><div class="stat-label">Jobs đang chạy</div></div>
+          </div>
+          <div class="stat-card stat-expires">
+            <div class="stat-icon">📆</div>
+            <div class="stat-info"><div class="stat-value" id="stat-expires">—</div><div class="stat-label">Hết hạn</div></div>
+          </div>
+        </div>
+        <div class="section-header"><h2>Tạo nhanh</h2></div>
+        <div class="quick-actions">
+          <button class="quick-btn" onclick="switchTab('t2i')">🎨 Tạo Ảnh</button>
+          <button class="quick-btn" onclick="switchTab('t2v')">🎬 Tạo Video</button>
+          <button class="quick-btn" onclick="switchTab('r2i')">🖼️ Ảnh Tham chiếu</button>
+          <button class="quick-btn" onclick="switchTab('i2v')">📸 Ảnh → Video</button>
+          <button class="quick-btn" onclick="switchTab('r2v')">🎭 Multi-Ref Video</button>
+        </div>
+        <div class="section-header"><h2>Kết quả gần đây</h2></div>
+        <div class="results-gallery" id="dashboard-gallery"></div>
+      </section>
+
+      <!-- ══════ TEXT TO IMAGE ══════ -->
+      <section class="tab-content" id="tab-t2i">
+        <div class="page-header"><h2>🎨 Text to Image</h2><p>Nhập prompt để tạo ảnh AI chất lượng cao</p></div>
+        <div class="form-layout">
+          <div class="form-main">
+            <div class="form-group">
+              <label>Prompts <small>(mỗi dòng = 1 ảnh)</small></label>
+              <textarea id="t2i-prompts" rows="5" placeholder="A beautiful sunset over mountains&#10;A futuristic city at night with neon lights"></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Aspect Ratio</label>
+                <select id="t2i-aspect"><option value="1:1">1:1</option><option value="16:9">16:9</option><option value="9:16">9:16</option><option value="4:3">4:3</option><option value="3:4">3:4</option></select>
+              </div>
+              <div class="form-group"><label>Model</label>
+                <select id="t2i-model"><option value="GEM_PIX_2">Nano (GEM_PIX_2)</option><option value="IMAGEN_4">Imagen 4</option></select>
+              </div>
+              <div class="form-group"><label>Số ảnh/prompt</label>
+                <select id="t2i-num"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Upscale</label>
+                <select id="t2i-upscale"><option value="Không">Không</option><option value="2K">2K</option><option value="4K" selected>4K (Free)</option></select>
+              </div>
+              <div class="form-group"><label>Concurrency</label>
+                <input type="range" id="t2i-concurrency" min="1" max="10" value="1"><span class="range-val" id="t2i-concurrency-val">1</span>
+              </div>
+            </div>
+            <button class="btn-generate" id="btn-t2i" onclick="handleT2I()">✨ Tạo Ảnh</button>
+          </div>
+          <div class="form-results" id="t2i-results"></div>
+        </div>
+      </section>
+
+      <!-- ══════ REFERENCE TO IMAGE ══════ -->
+      <section class="tab-content" id="tab-r2i">
+        <div class="page-header"><h2>🖼️ Reference to Image</h2><p>Upload ảnh mẫu + prompt để tạo ảnh mới theo style tham chiếu</p></div>
+        <div class="form-layout">
+          <div class="form-main">
+            <div class="form-group">
+              <label>Ảnh tham chiếu</label>
+              <div class="upload-zone" id="r2i-upload-zone">
+                <input type="file" id="r2i-files" multiple accept="image/*" hidden>
+                <div class="upload-placeholder" onclick="document.getElementById('r2i-files').click()">
+                  <span class="upload-icon">📁</span>
+                  <span>Kéo thả hoặc click để chọn ảnh</span>
+                </div>
+                <div class="upload-preview" id="r2i-preview"></div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Prompts <small>(mỗi dòng = 1 ảnh)</small></label>
+              <textarea id="r2i-prompts" rows="4" placeholder="Sản phẩm đặt trên bàn gỗ, ánh sáng studio"></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Aspect Ratio</label>
+                <select id="r2i-aspect"><option value="1:1">1:1</option><option value="16:9">16:9</option><option value="9:16">9:16</option><option value="4:3">4:3</option><option value="3:4">3:4</option></select>
+              </div>
+              <div class="form-group"><label>Model</label>
+                <select id="r2i-model"><option value="GEM_PIX_2">Nano (GEM_PIX_2)</option><option value="IMAGEN_4">Imagen 4</option></select>
+              </div>
+              <div class="form-group"><label>Upscale</label>
+                <select id="r2i-upscale"><option value="Không">Không</option><option value="2K">2K</option><option value="4K" selected>4K (Free)</option></select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Concurrency</label>
+                <input type="range" id="r2i-concurrency" min="1" max="10" value="1"><span class="range-val" id="r2i-concurrency-val">1</span>
+              </div>
+            </div>
+            <button class="btn-generate" id="btn-r2i" onclick="handleR2I()">✨ Tạo Ảnh Tham Chiếu</button>
+          </div>
+          <div class="form-results" id="r2i-results"></div>
+        </div>
+      </section>
+
+      <!-- ══════ TEXT TO VIDEO ══════ -->
+      <section class="tab-content" id="tab-t2v">
+        <div class="page-header"><h2>🎬 Text to Video</h2><p>Nhập prompt để tạo video AI 8 giây</p></div>
+        <div class="form-layout">
+          <div class="form-main">
+            <div class="form-group">
+              <label>Prompts <small>(mỗi dòng = 1 video)</small></label>
+              <textarea id="t2v-prompts" rows="5" placeholder="Cận cảnh giọt nước rơi vào ly cà phê, slow motion, 4K cinematic"></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Aspect Ratio</label>
+                <select id="t2v-aspect"><option value="16:9" selected>16:9</option><option value="9:16">9:16</option><option value="1:1">1:1</option></select>
+              </div>
+              <div class="form-group"><label>Model</label>
+                <select id="t2v-model"><option value="VEO_FLOW">VEO Flow ⭐⭐⭐</option><option value="VEO_3_1_FAST">VEO Fast ⚡⚡⚡⚡</option><option value="VEO_3_1_FAST_ULTRA">VEO Fast Ultra ⭐⭐⭐⭐</option><option value="VEO_3_1_LITE_FREE">VEO Lite Free 🆓</option></select>
+              </div>
+              <div class="form-group"><label>Upscale</label>
+                <select id="t2v-upscale"><option value="720p">720p (Gốc)</option><option value="1080p">1080p (Free)</option><option value="4K">4K</option></select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Concurrency</label>
+                <input type="range" id="t2v-concurrency" min="1" max="10" value="3"><span class="range-val" id="t2v-concurrency-val">3</span>
+              </div>
+              <div class="form-group toggle-group">
+                <label><input type="checkbox" id="t2v-chain"> Chain Mode</label>
+                <label><input type="checkbox" id="t2v-merge"> Auto Merge</label>
+              </div>
+            </div>
+            <button class="btn-generate" id="btn-t2v" onclick="handleT2V()">🎬 Tạo Video</button>
+          </div>
+          <div class="form-results" id="t2v-results"></div>
+        </div>
+      </section>
+
+      <!-- ══════ IMAGE TO VIDEO ══════ -->
+      <section class="tab-content" id="tab-i2v">
+        <div class="page-header"><h2>📸 Image to Video</h2><p>Upload ảnh + prompt để tạo video chuyển động</p></div>
+        <div class="form-layout">
+          <div class="form-main">
+            <div id="i2v-items">
+              <div class="i2v-item" data-index="0">
+                <div class="form-group">
+                  <label>Ảnh #1</label>
+                  <div class="upload-zone mini">
+                    <input type="file" class="i2v-file" accept="image/*" hidden>
+                    <div class="upload-placeholder" onclick="this.previousElementSibling.click()">
+                      <span class="upload-icon">📁</span><span>Chọn ảnh</span>
+                    </div>
+                    <div class="upload-preview"></div>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Prompt</label>
+                  <input type="text" class="i2v-prompt" placeholder="Camera zoom in slowly, cinematic">
+                </div>
+              </div>
+            </div>
+            <button class="btn-add" onclick="addI2VItem()">+ Thêm ảnh</button>
+            <div class="form-row">
+              <div class="form-group"><label>Aspect Ratio</label>
+                <select id="i2v-aspect"><option value="16:9">16:9</option><option value="9:16" selected>9:16</option><option value="1:1">1:1</option></select>
+              </div>
+              <div class="form-group"><label>Model</label>
+                <select id="i2v-model"><option value="VEO_FLOW">VEO Flow</option><option value="VEO_3_1_FAST">VEO Fast</option><option value="VEO_3_1_FAST_ULTRA">VEO Fast Ultra</option><option value="VEO_3_1_LITE_FREE">VEO Lite Free</option></select>
+              </div>
+              <div class="form-group"><label>Upscale</label>
+                <select id="i2v-upscale"><option value="720p">720p</option><option value="1080p">1080p</option><option value="4K">4K</option></select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Concurrency</label>
+                <input type="range" id="i2v-concurrency" min="1" max="10" value="3"><span class="range-val" id="i2v-concurrency-val">3</span>
+              </div>
+              <div class="form-group toggle-group">
+                <label><input type="checkbox" id="i2v-chain"> Chain Mode</label>
+                <label><input type="checkbox" id="i2v-merge"> Auto Merge</label>
+              </div>
+            </div>
+            <button class="btn-generate" id="btn-i2v" onclick="handleI2V()">📸 Tạo Video từ Ảnh</button>
+          </div>
+          <div class="form-results" id="i2v-results"></div>
+        </div>
+      </section>
+
+      <!-- ══════ MULTI-REF VIDEO ══════ -->
+      <section class="tab-content" id="tab-r2v">
+        <div class="page-header"><h2>🎭 Multi-Reference Video</h2><p>Upload nhiều ảnh tham chiếu + prompt để tạo video đồng nhất</p></div>
+        <div class="form-layout">
+          <div class="form-main">
+            <div id="r2v-items">
+              <div class="r2v-item" data-index="0">
+                <div class="form-group">
+                  <label>Ảnh tham chiếu #1</label>
+                  <div class="upload-zone">
+                    <input type="file" class="r2v-files" multiple accept="image/*" hidden>
+                    <div class="upload-placeholder" onclick="this.previousElementSibling.click()">
+                      <span class="upload-icon">📁</span><span>Chọn nhiều ảnh tham chiếu</span>
+                    </div>
+                    <div class="upload-preview"></div>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Prompt</label>
+                  <input type="text" class="r2v-prompt" placeholder="Nhân vật đi bộ trong công viên, phong cách anime">
+                </div>
+              </div>
+            </div>
+            <button class="btn-add" onclick="addR2VItem()">+ Thêm video</button>
+            <div class="form-row">
+              <div class="form-group"><label>Aspect Ratio</label>
+                <select id="r2v-aspect"><option value="16:9" selected>16:9</option><option value="9:16">9:16</option><option value="1:1">1:1</option></select>
+              </div>
+              <div class="form-group"><label>Model</label>
+                <select id="r2v-model"><option value="VEO_FLOW">VEO Flow</option><option value="VEO_3_1_FAST">VEO Fast</option><option value="VEO_3_1_FAST_ULTRA">VEO Fast Ultra</option><option value="VEO_3_1_LITE_FREE">VEO Lite Free</option></select>
+              </div>
+              <div class="form-group"><label>Voice</label>
+                <select id="r2v-voice"><option value="">Không có giọng</option><option value="achernar">Achernar</option><option value="charon">Charon</option><option value="algieba">Algieba</option><option value="alnilam">Alnilam</option><option value="aoede">Aoede</option><option value="autonoe">Autonoe</option><option value="callirrhoe">Callirrhoe</option><option value="algorab">Algorab</option></select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Upscale</label>
+                <select id="r2v-upscale"><option value="720p">720p</option><option value="1080p">1080p</option><option value="4K">4K</option></select>
+              </div>
+              <div class="form-group"><label>Concurrency</label>
+                <input type="range" id="r2v-concurrency" min="1" max="10" value="3"><span class="range-val" id="r2v-concurrency-val">3</span>
+              </div>
+              <div class="form-group toggle-group">
+                <label><input type="checkbox" id="r2v-chain"> Chain Mode</label>
+                <label><input type="checkbox" id="r2v-merge"> Auto Merge</label>
+              </div>
+            </div>
+            <button class="btn-generate" id="btn-r2v" onclick="handleR2V()">🎭 Tạo Video Ref</button>
+          </div>
+          <div class="form-results" id="r2v-results"></div>
+        </div>
+      </section>
+
+      <!-- ══════ JOBS ══════ -->
+      <section class="tab-content" id="tab-jobs">
+        <div class="page-header">
+          <h2>📋 Quản lý Jobs</h2>
+          <button class="btn-small" onclick="clearCompletedJobs()">🗑️ Xóa đã xong</button>
+        </div>
+        <div class="jobs-list" id="jobs-list"></div>
+      </section>
+
+      <!-- ══════ SETTINGS ══════ -->
+      <section class="tab-content" id="tab-settings">
+        <div class="page-header"><h2>⚙️ Cài đặt</h2><p>Cấu hình API endpoint và API Key</p></div>
+        <div class="settings-card">
+          <div class="form-group">
+            <label>API Endpoint URL</label>
+            <input type="url" id="setting-url" placeholder="https://won-doll-kid-envelope.trycloudflare.com" value="https://won-doll-kid-envelope.trycloudflare.com">
+          </div>
+          <div class="form-group">
+            <label>API Key</label>
+            <div class="input-with-btn">
+              <input type="password" id="setting-key" placeholder="gv_your_api_key_here">
+              <button class="btn-icon" onclick="toggleKeyVisibility()" title="Hiện/Ẩn">👁️</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <button class="btn-generate" onclick="saveSettings()">💾 Lưu cài đặt</button>
+            <button class="btn-secondary" onclick="testConnection()">🔗 Test kết nối</button>
+          </div>
+          <div class="connection-result" id="connection-result"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Notifications -->
+  <div class="notifications" id="notifications"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
