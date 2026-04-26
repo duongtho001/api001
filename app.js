@@ -3,14 +3,14 @@
    ══════════════════════════════════════════════ */
 
 // ── State ──
-let API_URL = localStorage.getItem('flow_api_url') || 'https://won-doll-kid-envelope.trycloudflare.com';
+// ⚠️ ADMIN: Đổi URL API tại đây trước khi deploy
+const API_URL = 'https://won-doll-kid-envelope.trycloudflare.com';
 let API_KEY = localStorage.getItem('flow_api_key') || '';
 const activeJobs = new Map(); // jobId -> {type, prompt, interval}
 const jobHistory = JSON.parse(localStorage.getItem('flow_jobs') || '[]');
 
 // ── Init ──
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('setting-url').value = API_URL;
   document.getElementById('setting-key').value = API_KEY;
   initNavigation();
   initRangeInputs();
@@ -288,11 +288,9 @@ function setConnected(ok) {
 
 // ══════ SETTINGS ══════
 function saveSettings() {
-  API_URL = document.getElementById('setting-url').value.replace(/\/+$/, '');
   API_KEY = document.getElementById('setting-key').value.trim();
-  localStorage.setItem('flow_api_url', API_URL);
   localStorage.setItem('flow_api_key', API_KEY);
-  notify('💾 Đã lưu cài đặt!', 'success');
+  notify('💾 Đã lưu API Key!', 'success');
   refreshKeyInfo();
 }
 

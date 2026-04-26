@@ -338,18 +338,15 @@
 
       <!-- ══════ SETTINGS ══════ -->
       <section class="tab-content" id="tab-settings">
-        <div class="page-header"><h2>⚙️ Cài đặt</h2><p>Cấu hình API endpoint và API Key</p></div>
+        <div class="page-header"><h2>⚙️ Cài đặt</h2><p>Nhập API Key để sử dụng dịch vụ</p></div>
         <div class="settings-card">
-          <div class="form-group">
-            <label>API Endpoint URL</label>
-            <input type="url" id="setting-url" placeholder="https://won-doll-kid-envelope.trycloudflare.com" value="https://won-doll-kid-envelope.trycloudflare.com">
-          </div>
           <div class="form-group">
             <label>API Key</label>
             <div class="input-with-btn">
               <input type="password" id="setting-key" placeholder="gv_your_api_key_here">
               <button class="btn-icon" onclick="toggleKeyVisibility()" title="Hiện/Ẩn">👁️</button>
             </div>
+            <small style="color:var(--muted);margin-top:6px;display:block">Liên hệ Admin để được cấp API Key</small>
           </div>
           <div class="form-row">
             <button class="btn-generate" onclick="saveSettings()">💾 Lưu cài đặt</button>
