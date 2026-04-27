@@ -128,7 +128,7 @@ async function uploadFile(file) {
   fd.append('file', file);
   const h = {};
   if (API_KEY) h['X-API-Key'] = API_KEY;
-  const r = await fetch(`${API_URL}/api/upload-image`, { method:'POST', headers: h, body: fd });
+  const r = await fetch(`${API_URL}/public/api/v1/upload-image`, { method:'POST', headers: h, body: fd });
   if (!r.ok) throw new Error('Upload failed');
   return (await r.json()).path;
 }
