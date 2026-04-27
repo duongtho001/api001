@@ -43,6 +43,9 @@
         <span class="nav-icon">📋</span><span class="nav-label">Jobs</span>
         <span class="nav-badge" id="active-jobs-badge" style="display:none">0</span>
       </a>
+      <a href="#" class="nav-item" data-tab="library">
+        <span class="nav-icon">📂</span><span class="nav-label">Thư viện</span>
+      </a>
       <a href="#" class="nav-item" data-tab="settings">
         <span class="nav-icon">⚙️</span><span class="nav-label">Cài đặt</span>
       </a>
@@ -334,6 +337,27 @@
           <button class="btn-small" onclick="clearCompletedJobs()">🗑️ Xóa đã xong</button>
         </div>
         <div class="jobs-list" id="jobs-list"></div>
+      </section>
+
+      <!-- ══════ LIBRARY ══════ -->
+      <section class="tab-content" id="tab-library">
+        <div class="page-header">
+          <h2>📂 Thư viện</h2>
+          <button class="btn-small" onclick="loadLibrary()">🔄 Refresh</button>
+        </div>
+        <div class="library-toolbar" style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+          <select id="lib-filter" onchange="filterLibrary()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px">
+            <option value="all">Tất cả</option>
+            <option value="images">🖼️ Ảnh</option>
+            <option value="videos">🎬 Video</option>
+          </select>
+          <span id="lib-count" style="color:var(--muted);font-size:13px"></span>
+        </div>
+        <div id="library-grid" class="library-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px"></div>
+        <div id="library-empty" style="display:none;text-align:center;padding:60px 20px;color:var(--muted)">
+          <div style="font-size:48px;margin-bottom:12px">📂</div>
+          <div>Chưa có file nào. Tạo ảnh/video để xem ở đây.</div>
+        </div>
       </section>
 
       <!-- ══════ SETTINGS ══════ -->

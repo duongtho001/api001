@@ -37,9 +37,10 @@ function switchTab(tab) {
   document.querySelector(`.nav-item[data-tab="${tab}"]`)?.classList.add('active');
   document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
   document.getElementById(`tab-${tab}`)?.classList.add('active');
-  const titles = { dashboard:'Dashboard', t2i:'Text → Ảnh', r2i:'Ref → Ảnh', t2v:'Text → Video', i2v:'Ảnh → Video', r2v:'Ref → Video', jobs:'Jobs', settings:'Cài đặt' };
+  const titles = { dashboard:'Dashboard', t2i:'Text → Ảnh', r2i:'Ref → Ảnh', t2v:'Text → Video', i2v:'Ảnh → Video', r2v:'Ref → Video', jobs:'Jobs', library:'Thư viện', settings:'Cài đặt' };
   document.getElementById('page-title').textContent = titles[tab] || tab;
   document.getElementById('sidebar').classList.remove('open');
+  if (tab === 'library') loadLibrary();
 }
 
 // ══════ RANGE INPUTS ══════
@@ -506,4 +507,105 @@ function notify(msg, type = 'info') {
   toast.textContent = msg;
   container.appendChild(toast);
   setTimeout(() => { toast.classList.add('hide'); setTimeout(() => toast.remove(), 300); }, 4000);
+}
+
+// ══════ LIBRARY ══════
+let libraryFiles = [];
+
+async function loadLibrary() {
+  const grid = document.getElementById('library-grid');
+  const empty = document.getElementById('library-empty');
+  grid.innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center">Loading...</div>';
+  try {
+    const data = await apiGet('/public/api/v1/storage');
+    libraryFiles = data.files || data || [];
+    filterLibrary();
+  } catch(e) {
+    grid.innerHTML = `<div style="color:#ef4444;padding:20px;text-align:center">❌ ${e.message}</div>`;
+    empty.style.display = 'none';
+  }
+}
+
+function filterLibrary() {
+  const filter = document.getElementById('lib-filter').value;
+  const grid = document.getElementById('library-grid');
+  const empty = document.getElementById('library-empty');
+  const countEl = document.getElementById('lib-count');
+
+  let files = libraryFiles;
+  if (filter === 'images') files = files.filter(f => isImageFile(f));
+  if (filter === 'videos') files = files.filter(f => isVideoFile(f));
+
+  countEl.textContent = `${files.length} file`;
+
+  if (!files.length) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  // Group by job_id or folder
+  const groups = {};
+  files.forEach(f => {
+    const key = f.job_id || f.folder || f._backend || 'other';
+    if (!groups[key]) groups[key] = { label: key, files: [], backend: f._backend || '' };
+    groups[key].files.push(f);
+  });
+
+  let html = '';
+  for (const [key, group] of Object.entries(groups)) {
+    html += `<div style="grid-column:1/-1;margin-top:8px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="color:var(--accent);font-size:14px;font-weight:600">📁 ${key.slice(0,12)}</span>
+        <span style="color:var(--muted);font-size:12px">${group.files.length} files · ${group.backend}</span>
+      </div>
+    </div>`;
+    group.files.forEach(f => {
+      const name = f.filename || f.name || f.path?.split('/').pop() || 'file';
+      const isImg = isImageFile(f);
+      const isVid = isVideoFile(f);
+      const size = f.size ? formatSize(f.size) : '';
+      const time = f.modified_at ? new Date(f.modified_at * 1000).toLocaleString() : '';
+      const fileUrl = f.url || (f._backend_url ? `${f._backend_url}/api/storage/${encodeURIComponent(f.path || name)}` : '#');
+      const thumbUrl = isImg ? fileUrl : '';
+
+      html += `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:transform .2s,border-color .2s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">`;
+      if (isImg && thumbUrl) {
+        html += `<div style="height:160px;overflow:hidden;background:#0a0e1a;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="window.open('${fileUrl}','_blank')">
+          <img src="${fileUrl}" style="width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.parentElement.innerHTML='<div style=color:#64748b;font-size:24px>🖼️</div>'">
+        </div>`;
+      } else if (isVid) {
+        html += `<div style="height:160px;overflow:hidden;background:#0a0e1a;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="window.open('${fileUrl}','_blank')">
+          <video src="${fileUrl}" style="width:100%;height:100%;object-fit:cover" muted onmouseover="this.play()" onmouseout="this.pause()" onerror="this.parentElement.innerHTML='<div style=color:#64748b;font-size:24px>🎬</div>'"></video>
+        </div>`;
+      } else {
+        html += `<div style="height:80px;background:#0a0e1a;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:32px">📄</div>`;
+      }
+      html += `<div style="padding:10px 12px">
+        <div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${name}">${isImg ? '🖼️' : isVid ? '🎬' : '📄'} ${name}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+          <span style="font-size:11px;color:var(--muted)">${size}${time ? ' · ' + time : ''}</span>
+          <a href="${fileUrl}" download="${name}" style="font-size:11px;color:var(--accent);text-decoration:none;font-weight:600" title="Download">⬇️</a>
+        </div>
+      </div></div>`;
+    });
+  }
+  grid.innerHTML = html;
+}
+
+function isImageFile(f) {
+  const name = (f.filename || f.name || f.path || '').toLowerCase();
+  return name.endsWith('.png') || name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.webp') || (f.type && f.type.startsWith('image'));
+}
+
+function isVideoFile(f) {
+  const name = (f.filename || f.name || f.path || '').toLowerCase();
+  return name.endsWith('.mp4') || name.endsWith('.webm') || name.endsWith('.mov') || (f.type && f.type.startsWith('video'));
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + 'B';
+  if (bytes < 1048576) return (bytes/1024).toFixed(1) + 'KB';
+  return (bytes/1048576).toFixed(1) + 'MB';
 }
