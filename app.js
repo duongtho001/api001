@@ -4,7 +4,7 @@
 
 // ── State ──
 // ⚠️ ADMIN: Đổi URL API tại đây trước khi deploy
-const API_URL = 'https://legacy-perfume-howard-filename.trycloudflare.com';
+const API_URL = 'https://franklin-vitamins-jennifer-investing.trycloudflare.com';
 let API_KEY = localStorage.getItem('flow_api_key') || '';
 const activeJobs = new Map(); // jobId -> {type, prompt, interval}
 const jobHistory = JSON.parse(localStorage.getItem('flow_jobs') || '[]');
@@ -567,7 +567,9 @@ function filterLibrary() {
       const isVid = isVideoFile(f);
       const size = f.size ? formatSize(f.size) : '';
       const time = f.modified_at ? new Date(f.modified_at * 1000).toLocaleString() : '';
-      const fileUrl = f.url || (f._backend_url ? `${f._backend_url}/api/storage/${encodeURIComponent(f.path || name)}` : '#');
+      // Route through gateway tunnel, not direct backend
+      const filePath = f.path || f.filename || name;
+      const fileUrl = `${API_URL}/public/api/v1/storage/file?path=${encodeURIComponent(filePath)}&backend=${encodeURIComponent(f._backend_url || '')}`;
       const thumbUrl = isImg ? fileUrl : '';
 
       html += `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:transform .2s,border-color .2s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">`;
