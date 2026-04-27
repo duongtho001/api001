@@ -1,4 +1,4 @@
-﻿/* ══════════════════════════════════════════════
+/* ══════════════════════════════════════════════
    Flow AI Studio — Main Application Logic
    ══════════════════════════════════════════════ */
 
@@ -515,7 +515,7 @@ let libraryFiles = [];
 async function loadLibrary() {
   const grid = document.getElementById('library-grid');
   const empty = document.getElementById('library-empty');
-  grid.innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center">Loading...</div>';
+  grid.innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center">⏳ Đang tải thư viện...</div>';
   try {
     const data = await apiGet('/public/api/v1/storage');
     libraryFiles = data.files || data || [];
@@ -545,41 +545,42 @@ function filterLibrary() {
   }
   empty.style.display = 'none';
 
-  // Group by job_id or folder
+  // Group by folder name (clean, no localhost)
   const groups = {};
   files.forEach(f => {
-    const key = f.job_id || f.folder || f._backend || 'other';
-    if (!groups[key]) groups[key] = { label: key, files: [], backend: f._backend || '' };
-    groups[key].files.push(f);
+    const folder = f.folder || f.job_id || 'other';
+    const cleanFolder = folder.replace(/\\/g, '/').split('/').pop() || folder;
+    if (!groups[cleanFolder]) groups[cleanFolder] = { label: cleanFolder, files: [] };
+    groups[cleanFolder].files.push(f);
   });
 
   let html = '';
+  let mediaIndex = 0;
   for (const [key, group] of Object.entries(groups)) {
     html += `<div style="grid-column:1/-1;margin-top:8px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <span style="color:var(--accent);font-size:14px;font-weight:600">📁 ${key.slice(0,12)}</span>
-        <span style="color:var(--muted);font-size:12px">${group.files.length} files · ${group.backend}</span>
+        <span style="color:var(--accent);font-size:14px;font-weight:600">📁 ${key}</span>
+        <span style="color:var(--muted);font-size:12px">${group.files.length} files</span>
       </div>
     </div>`;
     group.files.forEach(f => {
-      const name = f.filename || f.name || f.path?.split('/').pop() || 'file';
+      const name = f.filename || f.name || (f.path || '').replace(/\\/g, '/').split('/').pop() || 'file';
       const isImg = isImageFile(f);
       const isVid = isVideoFile(f);
       const size = f.size ? formatSize(f.size) : '';
       const time = f.modified_at ? new Date(f.modified_at * 1000).toLocaleString() : '';
-      // Route through gateway tunnel, not direct backend
       const filePath = f.path || f.filename || name;
-      const fileUrl = `${API_URL}/public/api/v1/storage/file?path=${encodeURIComponent(filePath)}&backend=${encodeURIComponent(f._backend_url || '')}`;
-      const thumbUrl = isImg ? fileUrl : '';
+      const backendUrl = f._backend_url || '';
+      const idx = mediaIndex++;
 
-      html += `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:transform .2s,border-color .2s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">`;
-      if (isImg && thumbUrl) {
-        html += `<div style="height:160px;overflow:hidden;background:#0a0e1a;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="window.open('${fileUrl}','_blank')">
-          <img src="${fileUrl}" style="width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.parentElement.innerHTML='<div style=color:#64748b;font-size:24px>🖼️</div>'">
+      html += `<div class="lib-card" style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:transform .2s,border-color .2s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">`; 
+      if (isImg) {
+        html += `<div id="lib-thumb-${idx}" data-path="${encodeURIComponent(filePath)}" data-backend="${encodeURIComponent(backendUrl)}" data-type="image" style="height:160px;overflow:hidden;background:#0a0e1a;display:flex;align-items:center;justify-content:center;cursor:pointer">
+          <div style="color:#64748b;font-size:13px">⏳ Đang tải...</div>
         </div>`;
       } else if (isVid) {
-        html += `<div style="height:160px;overflow:hidden;background:#0a0e1a;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="window.open('${fileUrl}','_blank')">
-          <video src="${fileUrl}" style="width:100%;height:100%;object-fit:cover" muted onmouseover="this.play()" onmouseout="this.pause()" onerror="this.parentElement.innerHTML='<div style=color:#64748b;font-size:24px>🎬</div>'"></video>
+        html += `<div id="lib-thumb-${idx}" data-path="${encodeURIComponent(filePath)}" data-backend="${encodeURIComponent(backendUrl)}" data-type="video" style="height:160px;overflow:hidden;background:#0a0e1a;display:flex;align-items:center;justify-content:center;cursor:pointer">
+          <div style="color:#64748b;font-size:13px">⏳ Đang tải...</div>
         </div>`;
       } else {
         html += `<div style="height:80px;background:#0a0e1a;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:32px">📄</div>`;
@@ -588,12 +589,79 @@ function filterLibrary() {
         <div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${name}">${isImg ? '🖼️' : isVid ? '🎬' : '📄'} ${name}</div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
           <span style="font-size:11px;color:var(--muted)">${size}${time ? ' · ' + time : ''}</span>
-          <a href="${fileUrl}" download="${name}" style="font-size:11px;color:var(--accent);text-decoration:none;font-weight:600" title="Download">⬇️</a>
+          <button onclick="downloadLibFile('${encodeURIComponent(filePath)}','${encodeURIComponent(backendUrl)}','${name}')" style="background:none;border:none;font-size:13px;cursor:pointer;color:var(--accent)" title="Download">⬇️</button>
         </div>
       </div></div>`;
     });
   }
   grid.innerHTML = html;
+
+  // Lazy load thumbnails with IntersectionObserver
+  const thumbs = grid.querySelectorAll('[id^="lib-thumb-"]');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        loadLibThumb(entry.target);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { rootMargin: '200px' });
+  thumbs.forEach(el => observer.observe(el));
+}
+
+// Fetch file with API key → blob URL
+async function fetchLibBlob(filePath, backendUrl) {
+  const url = `${API_URL}/public/api/v1/storage/file?path=${filePath}&backend=${backendUrl}`;
+  const resp = await fetch(url, { headers: { 'X-API-Key': API_KEY } });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  const blob = await resp.blob();
+  return URL.createObjectURL(blob);
+}
+
+// Load a single thumbnail
+async function loadLibThumb(el) {
+  const path = el.dataset.path;
+  const backend = el.dataset.backend;
+  const type = el.dataset.type;
+  try {
+    const blobUrl = await fetchLibBlob(path, backend);
+    if (type === 'image') {
+      el.innerHTML = `<img src="${blobUrl}" style="width:100%;height:100%;object-fit:cover" onclick="previewMedia('${blobUrl}','image')">`;
+    } else {
+      el.innerHTML = `<video src="${blobUrl}" style="width:100%;height:100%;object-fit:cover" muted loop onmouseover="this.play()" onmouseout="this.pause()" onclick="previewMedia('${blobUrl}','video')"></video>`;
+    }
+  } catch(e) {
+    el.innerHTML = `<div style="color:#ef4444;font-size:11px;padding:8px;text-align:center">❌ Lỗi tải</div>`;
+  }
+}
+
+// Preview modal
+function previewMedia(blobUrl, type) {
+  const existing = document.getElementById('media-preview-modal');
+  if (existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'media-preview-modal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,.9);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out';
+  modal.onclick = () => modal.remove();
+  if (type === 'image') {
+    modal.innerHTML = `<img src="${blobUrl}" style="max-width:90vw;max-height:90vh;border-radius:12px;box-shadow:0 0 40px rgba(0,0,0,.5)">`;
+  } else {
+    modal.innerHTML = `<video src="${blobUrl}" controls autoplay style="max-width:90vw;max-height:90vh;border-radius:12px;box-shadow:0 0 40px rgba(0,0,0,.5)"></video>`;
+  }
+  document.body.appendChild(modal);
+}
+
+// Download with auth
+async function downloadLibFile(filePath, backendUrl, filename) {
+  try {
+    const blobUrl = await fetchLibBlob(filePath, backendUrl);
+    const a = document.createElement('a');
+    a.href = blobUrl; a.download = decodeURIComponent(filename);
+    document.body.appendChild(a); a.click(); a.remove();
+    notify(`⬇️ Đang tải ${decodeURIComponent(filename)}`, 'success');
+  } catch(e) {
+    notify(`❌ Lỗi tải file: ${e.message}`, 'error');
+  }
 }
 
 function isImageFile(f) {
