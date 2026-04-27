@@ -4,7 +4,7 @@
 
 // ── State ──
 // ⚠️ ADMIN: Đổi URL API tại đây trước khi deploy
-const API_URL = 'https://hair-succeed-affiliates-guardian.trycloudflare.com';
+const API_URL = 'https://non-scholars-intend-suggested.trycloudflare.com';
 let API_KEY = localStorage.getItem('flow_api_key') || '';
 const activeJobs = new Map(); // jobId -> {type, prompt, interval}
 const jobHistory = JSON.parse(localStorage.getItem('flow_jobs') || '[]');
