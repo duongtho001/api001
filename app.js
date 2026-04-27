@@ -4,7 +4,7 @@
 
 // ── State ──
 // ⚠️ ADMIN: Đổi URL API tại đây trước khi deploy
-const API_URL = 'https://problems-encourage-parallel-falling.trycloudflare.com';
+const API_URL = 'https://voting-turns-knights-exhibition.trycloudflare.com';
 let API_KEY = localStorage.getItem('flow_api_key') || '';
 const activeJobs = new Map(); // jobId -> {type, prompt, interval}
 const jobHistory = JSON.parse(localStorage.getItem('flow_jobs') || '[]');
@@ -128,7 +128,7 @@ async function uploadFile(file) {
   fd.append('file', file);
   const h = {};
   if (API_KEY) h['X-API-Key'] = API_KEY;
-  const r = await fetch(`${API_URL}/public/api/v1/upload-image`, { method:'POST', headers: h, body: fd });
+  const r = await fetch(`${API_URL}/api/upload-image`, { method:'POST', headers: h, body: fd });
   if (!r.ok) throw new Error('Upload failed');
   return (await r.json()).path;
 }
@@ -143,7 +143,7 @@ function startPolling(jobId, type, promptText) {
 
   const interval = setInterval(async () => {
     try {
-      const job = await apiGet(`/public/api/v1/job/${jobId}`);
+      const job = await apiGet(`/public/api/v1/jobs/${jobId}`);
       entry.status = job.status;
       entry.progress = job.progress || 0;
       updateJobUI(jobId, job);
@@ -197,7 +197,7 @@ async function showResult(jobId, type, job) {
 
   const count = isImage ? (job.images_count || job.images?.length || 1) : (job.videos_count || job.videos?.length || 1);
   for (let i = 0; i < count; i++) {
-    const apiUrl = isImage ? `${API_URL}/public/api/v1/job/${jobId}/image?index=${i}` : `${API_URL}/public/api/v1/job/${jobId}/video?index=${i}`;
+    const apiUrl = isImage ? `${API_URL}/public/api/v1/jobs/${jobId}/image?index=${i}` : `${API_URL}/public/api/v1/jobs/${jobId}/video?index=${i}`;
     const card = document.createElement('div');
     card.className = 'result-card';
     card.innerHTML = `<div class="result-loading">⏳ Đang tải ${isImage ? 'ảnh' : 'video'}...</div>`;
@@ -221,7 +221,7 @@ async function addToGallery(jobId, type, isImage, count) {
   const gallery = document.getElementById('dashboard-gallery');
   if (!gallery) return;
   for (let i = 0; i < count; i++) {
-    const apiUrl = isImage ? `${API_URL}/public/api/v1/job/${jobId}/image?index=${i}` : `${API_URL}/public/api/v1/job/${jobId}/video?index=${i}`;
+    const apiUrl = isImage ? `${API_URL}/public/api/v1/jobs/${jobId}/image?index=${i}` : `${API_URL}/public/api/v1/jobs/${jobId}/video?index=${i}`;
     const blobUrl = await fetchMediaBlob(apiUrl);
     if (!blobUrl) continue;
     const item = document.createElement('div');
@@ -414,21 +414,21 @@ async function handleI2V() {
   const btn = document.getElementById('btn-i2v');
   btn.disabled = true; btn.classList.add('loading');
   try {
-    // Public I2V endpoint nhận FormData (UploadFile)
+    notify('📤 Đang upload ảnh...', 'info');
+    const apiItems = [];
     for (const it of items) {
-      const fd = new FormData();
-      fd.append('file', it.file);
-      fd.append('prompt', it.prompt);
-      fd.append('aspect_ratio', document.getElementById('i2v-aspect').value);
-      fd.append('model', document.getElementById('i2v-model').value);
-      const h = {};
-      if (API_KEY) h['X-API-Key'] = API_KEY;
-      const r = await fetch(`${API_URL}/public/api/v1/image-to-video`, { method:'POST', headers: h, body: fd });
-      if (!r.ok) throw new Error(`API ${r.status}: ${await r.text()}`);
-      const res = await r.json();
-      notify(`📸 Job I2V đã bắt đầu: ${res.job_id.slice(0,8)}`, 'info');
-      startPolling(res.job_id, 'I2V', it.prompt);
+      const path = await uploadFile(it.file);
+      apiItems.push({ image_path: path, prompt: it.prompt });
     }
+    const body = {
+      items: apiItems,
+      aspect_ratio: document.getElementById('i2v-aspect').value,
+      model_tier: document.getElementById('i2v-model').value,
+      max_concurrency: parseInt(document.getElementById('i2v-concurrency')?.value || '1'),
+    };
+    const res = await apiPost('/public/api/v1/image-to-video', body);
+    notify(`📸 Job I2V đã bắt đầu: ${res.job_id.slice(0,8)}`, 'info');
+    startPolling(res.job_id, 'I2V', items[0].prompt);
   } catch (e) { notify(`❌ Lỗi: ${e.message}`, 'error'); }
   btn.disabled = false; btn.classList.remove('loading');
 }
