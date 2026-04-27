@@ -183,41 +183,57 @@ function updateActiveCount() {
 }
 
 // ══════ SHOW RESULTS ══════
-function showResult(jobId, type, job) {
+async function fetchMediaBlob(url) {
+  const r = await fetch(url, { headers: apiHeaders(false) });
+  if (!r.ok) return null;
+  return URL.createObjectURL(await r.blob());
+}
+
+async function showResult(jobId, type, job) {
   const isImage = type.includes('Image') || type === 'T2I' || type === 'R2I';
   const resultsId = type === 'T2I' ? 't2i-results' : type === 'R2I' ? 'r2i-results' : type === 'T2V' ? 't2v-results' : type === 'I2V' ? 'i2v-results' : 'r2v-results';
   const container = document.getElementById(resultsId);
   if (!container) return;
 
-  const count = isImage ? (job.images?.length || 1) : (job.videos?.length || 1);
+  const count = isImage ? (job.images_count || job.images?.length || 1) : (job.videos_count || job.videos?.length || 1);
   for (let i = 0; i < count; i++) {
-    const url = isImage ? `${API_URL}/public/api/v1/job/${jobId}/image?index=${i}` : `${API_URL}/public/api/v1/job/${jobId}/video?index=${i}`;
+    const apiUrl = isImage ? `${API_URL}/public/api/v1/job/${jobId}/image?index=${i}` : `${API_URL}/public/api/v1/job/${jobId}/video?index=${i}`;
     const card = document.createElement('div');
     card.className = 'result-card';
-    if (isImage) {
-      card.innerHTML = `<img src="${url}" alt="Generated Image"><div class="result-info"><span>${type} #${i+1}</span><div class="result-actions"><a href="${url}" download target="_blank">⬇️ Tải</a></div></div>`;
-    } else {
-      card.innerHTML = `<video src="${url}" controls playsinline></video><div class="result-info"><span>${type} #${i+1}</span><div class="result-actions"><a href="${url}" download target="_blank">⬇️ Tải</a></div></div>`;
-    }
+    card.innerHTML = `<div class="result-loading">⏳ Đang tải ${isImage ? 'ảnh' : 'video'}...</div>`;
     container.prepend(card);
+
+    const blobUrl = await fetchMediaBlob(apiUrl);
+    if (!blobUrl) {
+      card.innerHTML = `<div class="result-error">❌ Không tải được ${isImage ? 'ảnh' : 'video'}</div>`;
+      continue;
+    }
+    if (isImage) {
+      card.innerHTML = `<img src="${blobUrl}" alt="Generated Image"><div class="result-info"><span>${type} #${i+1}</span><div class="result-actions"><a href="${blobUrl}" download="${type}_${jobId.slice(0,8)}_${i}.png">⬇️ Tải</a></div></div>`;
+    } else {
+      card.innerHTML = `<video src="${blobUrl}" controls playsinline></video><div class="result-info"><span>${type} #${i+1}</span><div class="result-actions"><a href="${blobUrl}" download="${type}_${jobId.slice(0,8)}_${i}.mp4">⬇️ Tải</a></div></div>`;
+    }
   }
   addToGallery(jobId, type, isImage, count);
 }
 
-function addToGallery(jobId, type, isImage, count) {
+async function addToGallery(jobId, type, isImage, count) {
   const gallery = document.getElementById('dashboard-gallery');
   if (!gallery) return;
   for (let i = 0; i < count; i++) {
-    const url = isImage ? `${API_URL}/public/api/v1/job/${jobId}/image?index=${i}` : `${API_URL}/public/api/v1/job/${jobId}/video?index=${i}`;
+    const apiUrl = isImage ? `${API_URL}/public/api/v1/job/${jobId}/image?index=${i}` : `${API_URL}/public/api/v1/job/${jobId}/video?index=${i}`;
+    const blobUrl = await fetchMediaBlob(apiUrl);
+    if (!blobUrl) continue;
     const item = document.createElement('div');
     item.className = 'gallery-item';
     if (isImage) {
-      item.innerHTML = `<img src="${url}" alt="Result"><div class="gallery-label">${type}</div>`;
+      item.innerHTML = `<img src="${blobUrl}" alt="Result"><div class="gallery-label">${type}</div>`;
     } else {
-      item.innerHTML = `<video src="${url}" muted loop onmouseover="this.play()" onmouseout="this.pause()"></video><div class="gallery-label">${type}</div>`;
+      item.innerHTML = `<video src="${blobUrl}" muted loop onmouseover="this.play()" onmouseout="this.pause()"></video><div class="gallery-label">${type}</div>`;
     }
     gallery.prepend(item);
   }
+
 }
 
 // ══════ JOB UI ══════
