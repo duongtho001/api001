@@ -128,7 +128,7 @@ async function uploadFile(file) {
   fd.append('file', file);
   const h = {};
   if (API_KEY) h['X-API-Key'] = API_KEY;
-  const r = await fetch(`${API_URL}/api/upload-image`, { method:'POST', headers: h, body: fd });
+  const r = await fetch(`${API_URL}/public/api/v1/upload-image`, { method:'POST', headers: h, body: fd });
   if (!r.ok) throw new Error('Upload failed');
   return (await r.json()).path;
 }
@@ -143,7 +143,7 @@ function startPolling(jobId, type, promptText) {
 
   const interval = setInterval(async () => {
     try {
-      const job = await apiGet(`/api/jobs/${jobId}`);
+      const job = await apiGet(`/public/api/v1/job/${jobId}`);
       entry.status = job.status;
       entry.progress = job.progress || 0;
       updateJobUI(jobId, job);
@@ -191,7 +191,7 @@ function showResult(jobId, type, job) {
 
   const count = isImage ? (job.images?.length || 1) : (job.videos?.length || 1);
   for (let i = 0; i < count; i++) {
-    const url = isImage ? `${API_URL}/api/jobs/${jobId}/image?index=${i}` : `${API_URL}/api/jobs/${jobId}/video?index=${i}`;
+    const url = isImage ? `${API_URL}/public/api/v1/job/${jobId}/image?index=${i}` : `${API_URL}/public/api/v1/job/${jobId}/video?index=${i}`;
     const card = document.createElement('div');
     card.className = 'result-card';
     if (isImage) {
@@ -208,7 +208,7 @@ function addToGallery(jobId, type, isImage, count) {
   const gallery = document.getElementById('dashboard-gallery');
   if (!gallery) return;
   for (let i = 0; i < count; i++) {
-    const url = isImage ? `${API_URL}/api/jobs/${jobId}/image?index=${i}` : `${API_URL}/api/jobs/${jobId}/video?index=${i}`;
+    const url = isImage ? `${API_URL}/public/api/v1/job/${jobId}/image?index=${i}` : `${API_URL}/public/api/v1/job/${jobId}/video?index=${i}`;
     const item = document.createElement('div');
     item.className = 'gallery-item';
     if (isImage) {
@@ -265,14 +265,14 @@ function clearCompletedJobs() {
 // ══════ KEY INFO ══════
 async function refreshKeyInfo() {
   try {
-    const info = await apiGet('/api/key/info');
+    const info = await apiGet('/public/api/v1/usage');
     document.getElementById('stat-credits').textContent = info.credits_remaining ?? '—';
-    document.getElementById('stat-images').textContent = info.image_quota_remaining ?? '—';
-    document.getElementById('stat-videos').textContent = info.video_quota_remaining ?? '—';
-    document.getElementById('stat-threads').textContent = info.max_concurrency ?? '—';
-    document.getElementById('stat-plan').textContent = info.plan ?? '—';
-    document.getElementById('stat-daily').textContent = `${info.daily_used ?? 0} / ${info.daily_limit ?? '—'}`;
-    document.getElementById('stat-expires').textContent = info.expires ?? '—';
+    document.getElementById('stat-images').textContent = info.image_remaining ?? '—';
+    document.getElementById('stat-videos').textContent = info.video_remaining ?? '—';
+    document.getElementById('stat-threads').textContent = info.max_concurrent_threads ?? info.max_concurrency ?? '—';
+    document.getElementById('stat-plan').textContent = info.plan_label ?? info.plan ?? '—';
+    document.getElementById('stat-daily').textContent = `${info.usage_today ?? 0} / ${info.daily_limit ?? '—'}`;
+    document.getElementById('stat-expires').textContent = info.expires_at || 'Vĩnh viễn';
     setConnected(true);
   } catch (e) {
     setConnected(false);
@@ -297,7 +297,7 @@ function saveSettings() {
 async function testConnection() {
   const result = document.getElementById('connection-result');
   try {
-    const info = await apiGet('/api/key/info');
+    const info = await apiGet('/public/api/v1/usage');
     result.className = 'connection-result success';
     result.textContent = `✅ Kết nối OK! Plan: ${info.plan}, Credits: ${info.credits_remaining}, Concurrency: ${info.max_concurrency}`;
     setConnected(true);
@@ -328,7 +328,7 @@ async function handleT2I() {
       upscale_quality: document.getElementById('t2i-upscale').value,
       max_concurrency: parseInt(document.getElementById('t2i-concurrency').value),
     };
-    const res = await apiPost('/api/text-to-image', body);
+    const res = await apiPost('/public/api/v1/text-to-image', body);
     notify(`🎨 Job tạo ảnh đã bắt đầu: ${res.job_id.slice(0,8)}`, 'info');
     startPolling(res.job_id, 'T2I', prompts[0]);
   } catch (e) { notify(`❌ Lỗi: ${e.message}`, 'error'); }
@@ -354,7 +354,7 @@ async function handleR2I() {
       upscale_quality: document.getElementById('r2i-upscale').value,
       max_concurrency: parseInt(document.getElementById('r2i-concurrency').value),
     };
-    const res = await apiPost('/api/reference-to-image', body);
+    const res = await apiPost('/public/api/v1/reference-to-image', body);
     notify(`🖼️ Job R2I đã bắt đầu: ${res.job_id.slice(0,8)}`, 'info');
     startPolling(res.job_id, 'R2I', prompts[0]);
   } catch (e) { notify(`❌ Lỗi: ${e.message}`, 'error'); }
@@ -377,9 +377,12 @@ async function handleT2V() {
       auto_merge: document.getElementById('t2v-merge').checked,
       max_concurrency: parseInt(document.getElementById('t2v-concurrency').value),
     };
-    const res = await apiPost('/api/text-to-video', body);
-    notify(`🎬 Job T2V đã bắt đầu: ${res.job_id.slice(0,8)}`, 'info');
-    startPolling(res.job_id, 'T2V', prompts[0]);
+    const res = await apiPost('/public/api/v1/text-to-video', body);
+    const jobIds = res.job_ids || [res.job_id];
+    jobIds.forEach((jid, i) => {
+      notify(`🎬 Job T2V #${i+1} đã bắt đầu: ${jid.slice(0,8)}`, 'info');
+      startPolling(jid, 'T2V', prompts[i] || prompts[0]);
+    });
   } catch (e) { notify(`❌ Lỗi: ${e.message}`, 'error'); }
   btn.disabled = false; btn.classList.remove('loading');
 }
@@ -395,25 +398,21 @@ async function handleI2V() {
   const btn = document.getElementById('btn-i2v');
   btn.disabled = true; btn.classList.add('loading');
   try {
-    notify('📤 Đang upload ảnh...', 'info');
-    const apiItems = [];
+    // Public I2V endpoint nhận FormData (UploadFile)
     for (const it of items) {
-      const path = await uploadFile(it.file);
-      apiItems.push({ image_path: path, prompt: it.prompt });
+      const fd = new FormData();
+      fd.append('file', it.file);
+      fd.append('prompt', it.prompt);
+      fd.append('aspect_ratio', document.getElementById('i2v-aspect').value);
+      fd.append('model', document.getElementById('i2v-model').value);
+      const h = {};
+      if (API_KEY) h['X-API-Key'] = API_KEY;
+      const r = await fetch(`${API_URL}/public/api/v1/image-to-video`, { method:'POST', headers: h, body: fd });
+      if (!r.ok) throw new Error(`API ${r.status}: ${await r.text()}`);
+      const res = await r.json();
+      notify(`📸 Job I2V đã bắt đầu: ${res.job_id.slice(0,8)}`, 'info');
+      startPolling(res.job_id, 'I2V', it.prompt);
     }
-    const body = {
-      items: apiItems,
-      aspect_ratio: document.getElementById('i2v-aspect').value,
-      model_tier: document.getElementById('i2v-model').value,
-      upscale_quality: document.getElementById('i2v-upscale').value,
-      video_length_seconds: 8,
-      chain_mode: document.getElementById('i2v-chain').checked,
-      auto_merge: document.getElementById('i2v-merge').checked,
-      max_concurrency: parseInt(document.getElementById('i2v-concurrency').value),
-    };
-    const res = await apiPost('/api/image-to-video', body);
-    notify(`📸 Job I2V đã bắt đầu: ${res.job_id.slice(0,8)}`, 'info');
-    startPolling(res.job_id, 'I2V', items[0].prompt);
   } catch (e) { notify(`❌ Lỗi: ${e.message}`, 'error'); }
   btn.disabled = false; btn.classList.remove('loading');
 }
@@ -447,7 +446,7 @@ async function handleR2V() {
       auto_merge: document.getElementById('r2v-merge').checked,
       max_concurrency: parseInt(document.getElementById('r2v-concurrency').value),
     };
-    const res = await apiPost('/api/multi-ref-video', body);
+    const res = await apiPost('/public/api/v1/multi-ref-video', body);
     notify(`🎭 Job R2V đã bắt đầu: ${res.job_id.slice(0,8)}`, 'info');
     startPolling(res.job_id, 'R2V', items[0].prompt);
   } catch (e) { notify(`❌ Lỗi: ${e.message}`, 'error'); }
